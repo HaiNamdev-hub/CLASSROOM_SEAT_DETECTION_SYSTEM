@@ -1,0 +1,53 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environment
+.venv/
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+
+# Environment variables
+.env
+
+# Test / coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Logs
+logs/
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# YOLO generated files
+runs/
+
+# Model files
+*.pt
+*.onnx
+
+# Large generated outputs
+data/output/*
+results/videos/*
+results/screenshots/*
+
+# Keep folder structure
+!data/output/.gitkeep
+!results/videos/.gitkeep
+!results/screenshots/.gitkeep

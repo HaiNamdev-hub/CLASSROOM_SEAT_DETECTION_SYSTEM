@@ -1,6 +1,7 @@
 import cv2
 
 from src.file_handler import check_file
+from pathlib import Path
 
 
 def read_image(file_path):
@@ -46,3 +47,59 @@ def show_image(image, window_name="Classroom Image"):
 
     cv2.waitKey(0)
     cv2.destroyAllWindows()
+
+
+def resize_image(image, width=800):
+    """
+    Resize ảnh theo chiều rộng, giữ nguyên tỷ lệ.
+    """
+
+    original_height, original_width = image.shape[:2]
+
+    ratio = width / original_width
+    new_height = int(original_height * ratio)
+
+    resized_image = cv2.resize(
+        image,
+        (width, new_height)
+    )
+
+    return resized_image
+
+
+def convert_to_gray(image):
+    """
+    Chuyển ảnh màu sang ảnh grayscale.
+    """
+
+    gray_image = cv2.cvtColor(
+        image,
+        cv2.COLOR_BGR2GRAY
+    )
+
+    return gray_image
+
+
+def save_image(image, output_path):
+    """
+    Lưu ảnh kết quả.
+    """
+
+    output_path = Path(output_path)
+
+    output_path.parent.mkdir(
+        parents=True,
+        exist_ok=True
+    )
+
+    success = cv2.imwrite(
+        str(output_path),
+        image
+    )
+
+    if not success:
+        raise ValueError(
+            f"Không thể lưu ảnh: {output_path}"
+        )
+
+    return output_path

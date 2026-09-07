@@ -1,17 +1,35 @@
 from src.file_handler import get_file_info
+from config.config import PROJECT_NAME
+from config.logger import setup_logger
+from src.image_handler import read_image, get_image_info, show_image
+
+logger = setup_logger()
 
 
 def main():
     print("=" * 50)
-    print("A7 - CLASSROOM SEAT DETECTION")
+    print(PROJECT_NAME)
     print("=" * 50)
 
-    print("Application started.")
+    logger.info("Application started")
 
     try:
         file_path = input("Nhập đường dẫn file input: ")
 
         file_info = get_file_info(file_path)
+
+        image = read_image(file_path)
+
+        image_info = get_image_info(image)
+
+        print("\nThông tin hình ảnh:")
+        print(f"Chiều rộng: {image_info['width']} px")
+        print(f"Chiều cao: {image_info['height']} px")
+        print(f"Số kênh màu: {image_info['channels']}")
+
+        show_image(image)
+
+        logger.info("Input file checked successfully")
 
         print("\nFile hợp lệ.")
         print(f"Tên file: {file_info['name']}")
@@ -20,16 +38,16 @@ def main():
         print(f"Đường dẫn: {file_info['path']}")
 
     except FileNotFoundError as e:
-        print(f"[ERROR] {e}")
+        logger.error(e)
 
     except ValueError as e:
-        print(f"[ERROR] {e}")
+        logger.error(e)
 
     except Exception as e:
-        print(f"[UNEXPECTED ERROR] {e}")
+        logger.exception(f"Unexpected error: {e}")
 
     finally:
-        print("\nApplication finished.")
+        logger.info("Application finished")
 
 
 if __name__ == "__main__":

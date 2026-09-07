@@ -51,3 +51,5 @@ results/screenshots/*
 !data/output/.gitkeep
 !results/videos/.gitkeep
 !results/screenshots/.gitkeep
+
+*.pt

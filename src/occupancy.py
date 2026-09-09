@@ -30,3 +30,48 @@ def determine_occupancy(
         })
 
     return results
+
+if __name__ == "__main__":
+    from src.seat_config import load_seats
+    from src.seat_mapper import map_persons_to_seats
+    from src.image_handler import read_image
+    from src.person_detector import (
+        load_model,
+        detect_persons,
+        extract_person_detections
+    )
+
+    model = load_model()
+
+    image = read_image(
+        "data/input/classroom.jpg"
+    )
+
+    results = detect_persons(
+        model,
+        image
+    )
+
+    detections = extract_person_detections(
+        results
+    )
+
+    seats = load_seats()
+
+    mappings = map_persons_to_seats(
+        detections,
+        seats
+    )
+
+    occupancy = determine_occupancy(
+        seats,
+        mappings
+    )
+
+    print("\n===== SEAT STATUS =====")
+
+    for seat in occupancy:
+        print(
+            f"{seat['seat_id']} "
+            f"-> {seat['status']}"
+        )

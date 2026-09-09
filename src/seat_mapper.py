@@ -1,15 +1,21 @@
-def get_person_center(person):
+from src.image_handler import read_image
+from src.person_detector import (
+    load_model,
+    detect_persons,
+    extract_person_detections
+)
+from src.seat_config import load_seats
+
+def get_person_position(person):
     x1, y1, x2, y2 = person["bbox"]
 
-    center_x = int(
+    point_x = int(
         (x1 + x2) / 2
     )
 
-    center_y = int(
-        (y1 + y2) / 2
-    )
+    point_y = y2
 
-    return center_x, center_y
+    return point_x, point_y
 
 def point_inside_roi(
     point,
@@ -29,13 +35,17 @@ def map_person_to_seat(
     person,
     seats
 ):
-    center = get_person_center(
+    position = get_person_position(
         person
+    )
+
+    print(
+        f"Person position: {position}"
     )
 
     for seat in seats:
         if point_inside_roi(
-            center,
+            position,
             seat["roi"]
         ):
             return seat["seat_id"]
@@ -63,3 +73,36 @@ def map_persons_to_seats(
         })
 
     return mappings
+
+if __name__ == "__main__":
+    model = load_model()
+
+    image = read_image(
+        "data/input/classroom.jpg"
+    )
+
+    results = detect_persons(
+        model,
+        image
+    )
+
+    detections = extract_person_detections(
+        results
+    )
+
+    seats = load_seats()
+
+    mappings = map_persons_to_seats(
+        detections,
+        seats
+    )
+
+    print("\n===== REAL SEAT MAPPING =====")
+
+    for mapping in mappings:
+        print(
+            f"BBox: {mapping['bbox']} "
+            f"-> Seat: {mapping['seat_id']} "
+            f"| Confidence: "
+            f"{mapping['confidence']:.2f}"
+        )

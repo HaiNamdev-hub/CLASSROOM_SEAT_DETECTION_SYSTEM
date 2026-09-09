@@ -163,23 +163,23 @@ def draw_seats(image, seats):
     return output_image
 
 if __name__ == "__main__":
-    # image_path = "data/input/classroom.jpg"
+    image_path = "data/input/classroom.jpg"
 
-    # seats = configure_seats(
-    #     image_path
-    # )
+    seats = configure_seats(
+        image_path
+    )
 
-    # if seats:
-    #     save_seats(seats)
+    if seats:
+        save_seats(seats)
 
-    #     print(
-    #         f"\nTổng số ghế: {len(seats)}"
-    #     )
+        print(
+            f"\nTổng số ghế: {len(seats)}"
+        )
 
-    # else:
-    #     print(
-    #         "Chưa cấu hình ghế nào."
-    #     )
+    else:
+        print(
+            "Chưa cấu hình ghế nào."
+        )
 
     image = read_image(
         "data/input/classroom.jpg"

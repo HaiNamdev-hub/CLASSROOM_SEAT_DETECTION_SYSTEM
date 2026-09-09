@@ -57,8 +57,8 @@ def load_seats(
         return json.load(file)
 
 
-def configure_seats(image_path):
-    image = read_image(image_path)
+def configure_seats(image):
+    image = image.copy()
 
     seats = []
 
@@ -66,7 +66,8 @@ def configure_seats(image_path):
 
     while True:
         print(
-            f"\nKhoanh vùng cho ghế S{seat_number:02d}"
+            f"\nKhoanh vùng cho ghế "
+            f"S{seat_number:02d}"
         )
 
         print(
@@ -91,7 +92,9 @@ def configure_seats(image_path):
         if w == 0 or h == 0:
             break
 
-        seat_id = f"S{seat_number:02d}"
+        seat_id = (
+            f"S{seat_number:02d}"
+        )
 
         seat = {
             "seat_id": seat_id,
@@ -103,7 +106,9 @@ def configure_seats(image_path):
             ]
         }
 
-        seats.append(seat)
+        seats.append(
+            seat
+        )
 
         cv2.rectangle(
             image,
@@ -116,7 +121,10 @@ def configure_seats(image_path):
         cv2.putText(
             image,
             seat_id,
-            (x, max(y - 10, 20)),
+            (
+                x,
+                max(y - 10, 20)
+            ),
             cv2.FONT_HERSHEY_SIMPLEX,
             0.7,
             (255, 0, 0),
@@ -162,40 +170,188 @@ def draw_seats(image, seats):
 
     return output_image
 
-if __name__ == "__main__":
-    image_path = "data/input/classroom.jpg"
-
-    seats = configure_seats(
-        image_path
+def get_video_frame(
+    video_path,
+    frame_number=0
+):
+    video = cv2.VideoCapture(
+        video_path
     )
 
-    if seats:
-        save_seats(seats)
-
-        print(
-            f"\nTổng số ghế: {len(seats)}"
+    if not video.isOpened():
+        raise ValueError(
+            f"Không thể mở video: {video_path}"
         )
+
+    video.set(
+        cv2.CAP_PROP_POS_FRAMES,
+        frame_number
+    )
+
+    success, frame = video.read()
+
+    video.release()
+
+    if not success:
+        raise ValueError(
+            f"Không thể đọc frame {frame_number} "
+            f"từ video."
+        )
+
+    return frame
+
+def get_webcam_frame(
+    camera_index=0
+):
+    camera = cv2.VideoCapture(
+        camera_index
+    )
+
+    if not camera.isOpened():
+        raise RuntimeError(
+            f"Không thể mở webcam index "
+            f"{camera_index}"
+        )
+
+    success, frame = camera.read()
+
+    camera.release()
+
+    if not success:
+        raise RuntimeError(
+            "Không thể lấy frame từ webcam."
+        )
+
+    return frame
+
+if __name__ == "__main__":
+    print("=" * 50)
+    print("SEAT ROI CONFIGURATION")
+    print("=" * 50)
+
+    print("1. Image")
+    print("2. Video")
+    print("3. Webcam")
+
+    choice = input(
+        "Chọn nguồn để cấu hình Seat ROI: "
+    ).strip()
+
+    if choice == "1":
+        image = read_image(
+            "data/input/classroom.jpg"
+        )
+
+        seats = configure_seats(
+            image
+        )
+
+        config_path = "config/seats_image.json"
+
+        if seats:
+            save_seats(
+                seats,
+                config_path
+            )
+
+            print(
+                f"\nTổng số ghế: {len(seats)}"
+            )
+
+            output_image = draw_seats(
+                image,
+                seats
+            )
+
+            cv2.imshow(
+                "Seat ROI - Image",
+                output_image
+            )
+
+            cv2.waitKey(0)
+            cv2.destroyAllWindows()
+
+    elif choice == "2":
+        frame = get_video_frame(
+            "data/input/classroom.mp4",
+            frame_number=0
+        )
+
+        seats = configure_seats(
+            frame
+        )
+
+        config_path = "config/seats_video.json"
+
+        if seats:
+            save_seats(
+                seats,
+                config_path
+            )
+
+            print(
+                f"\nTổng số ghế: {len(seats)}"
+            )
+
+            output_frame = draw_seats(
+                frame,
+                seats
+            )
+
+            h, w = output_frame.shape[:2]
+
+            display_width = 960
+            ratio = display_width / w
+            display_height = int(h * ratio)
+
+            display_frame = cv2.resize(
+                output_frame,
+                (display_width, display_height)
+            )
+
+            cv2.imshow(
+                "Seat ROI - Video",
+                display_frame
+            )
+
+            cv2.waitKey(0)
+            cv2.destroyAllWindows()
+
+    elif choice == "3":
+        frame = get_webcam_frame(
+            camera_index=0
+        )
+
+        seats = configure_seats(
+            frame
+        )
+
+        config_path = "config/seats_webcam.json"
+
+        if seats:
+            save_seats(
+                seats,
+                config_path
+            )
+
+            print(
+                f"\nTổng số ghế: {len(seats)}"
+            )
+
+            output_frame = draw_seats(
+                frame,
+                seats
+            )
+
+            cv2.imshow(
+                "Seat ROI - Webcam",
+                output_frame
+            )
+
+            cv2.waitKey(0)
+            cv2.destroyAllWindows()
 
     else:
         print(
-            "Chưa cấu hình ghế nào."
+            "Lựa chọn không hợp lệ."
         )
-
-    image = read_image(
-        "data/input/classroom.jpg"
-    )
-
-    seats = load_seats()
-
-    output_image = draw_seats(
-        image,
-        seats
-    )
-
-    cv2.imshow(
-        "Seat ROI Test",
-        output_image
-    )
-
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()

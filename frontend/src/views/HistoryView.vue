@@ -8,12 +8,17 @@ import api
   from "../services/api";
 
 
-const history = ref(
-  []
-);
+const history = ref([]);
+
+const loading = ref(false);
+
+const errorMessage = ref("");
 
 
 const loadHistory = async () => {
+
+  loading.value = true;
+  errorMessage.value = "";
 
   try {
 
@@ -27,7 +32,17 @@ const loadHistory = async () => {
 
   } catch (error) {
 
-    console.error(error);
+    console.error(
+      "History error:",
+      error
+    );
+
+    errorMessage.value =
+      "Không thể tải lịch sử.";
+
+  } finally {
+
+    loading.value = false;
 
   }
 
@@ -48,14 +63,55 @@ onMounted(
       Analysis History
     </h1>
 
+    <p class="page-subtitle">
+      Previous classroom analysis results.
+    </p>
+
 
     <div class="panel">
 
-      <table class="history-table">
+      <button
+        class="primary-btn"
+        @click="loadHistory"
+      >
+        Refresh
+      </button>
+
+
+      <p v-if="loading">
+        Loading...
+      </p>
+
+
+      <p
+        v-if="errorMessage"
+      >
+        {{ errorMessage }}
+      </p>
+
+
+      <p
+        v-if="
+          !loading
+          && history.length === 0
+        "
+      >
+        No analysis history.
+      </p>
+
+
+      <table
+        v-if="history.length > 0"
+        class="history-table"
+      >
 
         <thead>
 
           <tr>
+
+            <th>
+              ID
+            </th>
 
             <th>
               Time
@@ -63,6 +119,10 @@ onMounted(
 
             <th>
               Source
+            </th>
+
+            <th>
+              File
             </th>
 
             <th>
@@ -98,11 +158,19 @@ onMounted(
           >
 
             <td>
+              {{ item.id }}
+            </td>
+
+            <td>
               {{ item.created_at }}
             </td>
 
             <td>
               {{ item.source_type }}
+            </td>
+
+            <td>
+              {{ item.source_name }}
             </td>
 
             <td>
@@ -122,7 +190,9 @@ onMounted(
             </td>
 
             <td>
-              {{ item.occupancy_rate }}%
+              {{
+                item.occupancy_rate
+              }}%
             </td>
 
           </tr>
@@ -140,12 +210,17 @@ onMounted(
 .history-table {
   width: 100%;
   border-collapse: collapse;
+  margin-top: 20px;
 }
 
 .history-table th,
 .history-table td {
-  text-align: left;
   padding: 12px;
+  text-align: left;
   border-bottom: 1px solid #e5e7eb;
+}
+
+.history-table th {
+  background: #f9fafb;
 }
 </style>

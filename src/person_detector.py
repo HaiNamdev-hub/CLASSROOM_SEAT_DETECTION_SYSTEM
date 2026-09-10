@@ -8,6 +8,7 @@ import time
 
 DEFAULT_MODEL = "yolo11n.pt"
 PERSON_CLASS_ID = 0
+CHAIR_CLASS_ID = 56
 
 
 def load_model(model_name=DEFAULT_MODEL):
@@ -37,6 +38,78 @@ def detect_persons(model, image):
     )
 
     return results
+
+
+def detect_persons_and_chairs(
+    model,
+    image
+):
+    """
+    Detect Person và Chair
+    dùng cho webcam dynamic.
+    """
+
+    results = model(
+        image,
+        classes=[
+            PERSON_CLASS_ID,
+            CHAIR_CLASS_ID
+        ]
+    )
+
+    return results
+
+
+def extract_person_and_chair_detections(
+    results
+):
+    persons = []
+    chairs = []
+
+    for result in results:
+
+        for box in result.boxes:
+
+            class_id = int(
+                box.cls[0]
+            )
+
+            x1, y1, x2, y2 = (
+                box.xyxy[0].tolist()
+            )
+
+            confidence = float(
+                box.conf[0]
+            )
+
+            detection = {
+                "bbox": [
+                    int(x1),
+                    int(y1),
+                    int(x2),
+                    int(y2)
+                ],
+                "confidence":
+                    confidence
+            }
+
+            if (
+                class_id
+                == PERSON_CLASS_ID
+            ):
+                persons.append(
+                    detection
+                )
+
+            elif (
+                class_id
+                == CHAIR_CLASS_ID
+            ):
+                chairs.append(
+                    detection
+                )
+
+    return persons, chairs
 
 
 def extract_person_detections(results):

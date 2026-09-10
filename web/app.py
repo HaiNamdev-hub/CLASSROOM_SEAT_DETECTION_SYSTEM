@@ -19,6 +19,9 @@ from flask import (
 from src.image_handler import (
     read_image
 )
+from src.webcam_processor import (
+    process_dynamic_webcam_frame
+)
 
 from src.main import (
     process_frame
@@ -235,6 +238,8 @@ def statistics():
     "/api/analyze/image",
     methods=["POST"]
 )
+
+
 def analyze_image():
 
     if "image" not in request.files:
@@ -1181,16 +1186,12 @@ def stop_webcam():
 
 
         save_seat_results(
-            session_id,
-
-            webcam_state[
-                "last_occupancy"
-            ],
-
-            webcam_state[
-                "last_mappings"
-            ]
-        )
+    session_id,
+    webcam_state[
+        "last_occupancy"
+    ],
+    None
+)
 
 
         webcam_state[
@@ -1458,12 +1459,6 @@ def generate_webcam_frames():
 
     try:
 
-        seats = load_seats(
-            str(
-                SEAT_WEBCAM_CONFIG
-            )
-        )
-
 
         while webcam_state[
             "running"
@@ -1499,17 +1494,16 @@ def generate_webcam_frames():
 
 
             (
-                output_frame,
-                detections,
-                mappings,
-                occupancy_results,
-                statistics_result
-            ) = process_frame(
-                model,
-                frame,
-                seats,
-                draw_stats=False
-            )
+    output_frame,
+    persons,
+    chairs,
+    occupancy_results,
+    statistics_result
+) = process_dynamic_webcam_frame(
+    model,
+    frame,
+    fps=None
+)
 
 
             processing_time = (
@@ -1543,13 +1537,13 @@ def generate_webcam_frames():
 
             webcam_state[
                 "last_mappings"
-            ] = mappings
-
+            ] = None
+    
 
             webcam_state[
                 "last_persons"
             ] = len(
-                detections
+                persons
             )
 
 

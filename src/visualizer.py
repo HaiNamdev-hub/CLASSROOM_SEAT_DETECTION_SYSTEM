@@ -9,6 +9,7 @@ def draw_seat_status(
     output = image.copy()
 
     for seat in occupancy_results:
+
         seat_id = seat["seat_id"]
         status = seat["status"]
 
@@ -32,7 +33,10 @@ def draw_seat_status(
         cv2.putText(
             output,
             label,
-            (x1, max(y1 - 10, 20)),
+            (
+                x1,
+                max(y1 - 10, 20)
+            ),
             cv2.FONT_HERSHEY_SIMPLEX,
             0.6,
             color,
@@ -40,6 +44,7 @@ def draw_seat_status(
         )
 
     return output
+
 
 def draw_statistics(
     image,
@@ -49,9 +54,18 @@ def draw_statistics(
     output = image.copy()
 
     lines = [
-        f"Total Seats: {statistics['total_seats']}",
-        f"Occupied: {statistics['occupied_seats']}",
-        f"Empty: {statistics['empty_seats']}",
+        (
+            "Total Seats: "
+            f"{statistics['total_seats']}"
+        ),
+        (
+            "Occupied: "
+            f"{statistics['occupied_seats']}"
+        ),
+        (
+            "Empty: "
+            f"{statistics['empty_seats']}"
+        ),
         (
             "Occupancy Rate: "
             f"{statistics['occupancy_rate']:.1f}%"
@@ -67,6 +81,7 @@ def draw_statistics(
     y = 35
 
     for line in lines:
+
         cv2.putText(
             output,
             line,
@@ -81,33 +96,129 @@ def draw_statistics(
 
     return output
 
+def draw_dynamic_seat_status(
+    image,
+    occupancy_results
+):
+    output = image.copy()
+
+
+    for seat in occupancy_results:
+
+        x1, y1, x2, y2 = (
+            seat["roi"]
+        )
+
+        status = (
+            seat["status"]
+        )
+
+        seat_id = (
+            seat["seat_id"]
+        )
+
+
+        if status == "Occupied":
+
+            color = (
+                0,
+                0,
+                255
+            )
+
+        else:
+
+            color = (
+                0,
+                255,
+                0
+            )
+
+
+        cv2.rectangle(
+            output,
+            (x1, y1),
+            (x2, y2),
+            color,
+            2
+        )
+
+
+        label = (
+            f"{seat_id}: {status}"
+        )
+
+
+        cv2.putText(
+            output,
+            label,
+            (
+                x1,
+                max(
+                    y1 - 10,
+                    20
+                )
+            ),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.6,
+            color,
+            2
+        )
+
+
+    return output
+
+
 if __name__ == "__main__":
+
     image = cv2.imread(
         "data/input/classroom.jpg"
     )
 
     if image is None:
+
         raise FileNotFoundError(
-            "Không đọc được data/input/classroom.jpg"
+            "Không đọc được "
+            "data/input/classroom.jpg"
         )
+
 
     occupancy_results = [
         {
             "seat_id": "S01",
-            "roi": [50, 250, 220, 430],
-            "status": "Occupied"
+            "roi": [
+                50,
+                250,
+                220,
+                430
+            ],
+            "status":
+                "Occupied"
         },
         {
             "seat_id": "S02",
-            "roi": [250, 250, 420, 430],
-            "status": "Empty"
+            "roi": [
+                250,
+                250,
+                420,
+                430
+            ],
+            "status":
+                "Empty"
         },
         {
             "seat_id": "S03",
-            "roi": [450, 250, 620, 430],
-            "status": "Occupied"
+            "roi": [
+                450,
+                250,
+                620,
+                430
+            ],
+            "status":
+                "Occupied"
         }
     ]
+
 
     statistics = {
         "total_seats": 3,
@@ -116,10 +227,12 @@ if __name__ == "__main__":
         "occupancy_rate": 66.7
     }
 
+
     output = draw_seat_status(
         image,
         occupancy_results
     )
+
 
     output = draw_statistics(
         output,
@@ -127,36 +240,45 @@ if __name__ == "__main__":
         fps=18.5
     )
 
+
     output_path = Path(
-        "results/screenshots/visualizer_test.jpg"
+        "results/screenshots/"
+        "visualizer_test.jpg"
     )
 
-    # Tạo thư mục nếu chưa có
+
     output_path.parent.mkdir(
         parents=True,
         exist_ok=True
     )
 
-    # Lưu ảnh
+
     success = cv2.imwrite(
         str(output_path),
         output
     )
 
-    # Kiểm tra lưu thành công
+
     if not success:
+
         raise ValueError(
-            f"Không thể lưu ảnh tại: {output_path}"
+            f"Không thể lưu ảnh tại: "
+            f"{output_path}"
         )
 
+
     print(
-        f"Đã lưu ảnh test tại: {output_path}"
+        f"Đã lưu ảnh test tại: "
+        f"{output_path}"
     )
+
 
     cv2.imshow(
         "Visualizer Test",
         output
     )
 
+
     cv2.waitKey(0)
+
     cv2.destroyAllWindows()

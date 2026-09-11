@@ -14,16 +14,19 @@ const loading = ref(false);
 
 const errorMessage = ref("");
 
-
-// Dữ liệu đang được xem
 const selectedItem = ref(null);
 
 const showMediaModal = ref(false);
 
 
+const BACKEND_URL =
+  "http://127.0.0.1:5000";
+
+
 const loadHistory = async () => {
 
   loading.value = true;
+
   errorMessage.value = "";
 
   try {
@@ -35,6 +38,11 @@ const loadHistory = async () => {
 
     history.value =
       response.data;
+
+    console.log(
+      "History:",
+      response.data
+    );
 
   } catch (error) {
 
@@ -73,11 +81,53 @@ const closeMedia = () => {
 };
 
 
+const getMediaUrl = (item) => {
+
+  if (!item?.media_url) {
+
+    return "";
+
+  }
+
+  if (
+    item.media_url.startsWith(
+      "http://"
+    )
+    ||
+    item.media_url.startsWith(
+      "https://"
+    )
+  ) {
+
+    return item.media_url;
+
+  }
+
+  return (
+    BACKEND_URL
+    +
+    item.media_url
+  );
+
+};
+
+
+const formatRate = (rate) => {
+
+  const value =
+    Number(rate || 0);
+
+  return (
+    `${value.toFixed(1)}%`
+  );
+
+};
+
+
 onMounted(
   loadHistory
 );
 </script>
-
 
 <template>
 
@@ -199,8 +249,8 @@ onMounted(
             </td>
 
             <td>
-              {{ item.occupancy_rate }}%
-            </td>
+  {{ formatRate(item.occupancy_rate) }}
+</td>
 
 
             <!-- Nút xem ảnh/video -->
@@ -260,34 +310,57 @@ onMounted(
 
         <div class="media-container">
 
-          <!-- Nếu là ảnh -->
-          <img
-            v-if="
-              selectedItem.source_type === 'image'
-            "
-            :src="selectedItem.media_url"
-            class="history-image"
-            alt="Classroom analysis"
-          >
+  <!-- IMAGE -->
+  <img
+    v-if="
+      selectedItem.source_type === 'image'
+      && selectedItem.media_url
+    "
+    :src="getMediaUrl(selectedItem)"
+    class="history-image"
+    alt="Classroom analysis"
+  >
 
 
-          <!-- Nếu là video -->
-          <video
-            v-else-if="
-              selectedItem.source_type === 'video'
-            "
-            :src="selectedItem.media_url"
-            class="history-video"
-            controls
-          >
-          </video>
+  <!-- VIDEO -->
+  <video
+    v-else-if="
+      selectedItem.source_type === 'video'
+      && selectedItem.media_url
+    "
+    :src="getMediaUrl(selectedItem)"
+    class="history-video"
+    controls
+  >
+  </video>
 
 
-          <p v-else>
-            Không hỗ trợ loại file này.
-          </p>
+  <!-- WEBCAM -->
+  <img
+    v-else-if="
+      selectedItem.source_type === 'webcam'
+      && selectedItem.media_url
+    "
+    :src="getMediaUrl(selectedItem)"
+    class="history-image"
+    alt="Webcam snapshot"
+  >
 
-        </div>
+
+  <!-- KHÔNG CÓ MEDIA -->
+  <div
+    v-else
+    class="no-media"
+  >
+
+    <p>
+      Không có ảnh/video được lưu
+      cho lần phân tích này.
+    </p>
+
+  </div>
+
+</div>
 
 
         <div class="media-info">
@@ -314,7 +387,7 @@ onMounted(
 
           <p>
             <strong>Occupancy Rate:</strong>
-            {{ selectedItem.occupancy_rate }}%
+           {{ formatRate(selectedItem.occupancy_rate) }}
           </p>
 
         </div>

@@ -176,24 +176,21 @@ video_jobs = {}
 # =========================================================
 
 webcam_state = {
-    # User has requested camera to run
     "running": False,
-
-    # Camera was actually opened successfully
     "stream_active": False,
 
-    # Latest processed frame information
     "last_statistics": None,
     "last_occupancy": None,
     "last_mappings": None,
     "last_persons": 0,
     "last_fps": 0.0,
 
-    # Prevent duplicate history records
+    # thêm dòng này
+    "last_frame": None,
+
     "saved": False,
     "session_id": None,
 
-    # Error information
     "error": None
 }
 
@@ -1117,6 +1114,12 @@ def start_webcam():
         "error"
     ] = None
 
+    webcam_state[
+        "last_frame"
+    ] = None
+
+
+
 
     return jsonify({
         "success": True,
@@ -1129,6 +1132,14 @@ def start_webcam():
     })
 
 
+# =========================================================
+# STOP WEBCAM + SAVE DATABASE
+# =========================================================
+
+@app.route(
+    "/api/webcam/stop",
+    methods=["POST"]
+)
 # =========================================================
 # STOP WEBCAM + SAVE DATABASE
 # =========================================================
@@ -1151,7 +1162,10 @@ def stop_webcam():
     )
 
 
-    # Không có frame nào được xử lý
+    # ==========================================
+    # KHÔNG CÓ FRAME ĐÃ XỬ LÝ
+    # ==========================================
+
     if statistics_result is None:
 
         webcam_state[
@@ -1176,7 +1190,10 @@ def stop_webcam():
         })
 
 
-    # Đã save trước đó rồi
+    # ==========================================
+    # ĐÃ SAVE TRƯỚC ĐÓ
+    # ==========================================
+
     if webcam_state[
         "saved"
     ]:
@@ -1203,10 +1220,64 @@ def stop_webcam():
         })
 
 
+    # ==========================================
+    # SAVE WEBCAM RESULT
+    # ==========================================
+
     try:
+
+        last_frame = (
+            webcam_state[
+                "last_frame"
+            ]
+        )
+
+
+        output_path = None
+
+        output_filename = None
+
+
+        # ======================================
+        # LƯU FRAME CUỐI CÙNG THÀNH ẢNH
+        # ======================================
+
+        if last_frame is not None:
+
+            output_filename = (
+                f"webcam_"
+                f"{uuid.uuid4().hex}.jpg"
+            )
+
+
+            output_path = (
+                RESULT_IMAGE_DIR
+                / output_filename
+            )
+
+
+            save_success = (
+                cv2.imwrite(
+                    str(output_path),
+                    last_frame
+                )
+            )
+
+
+            if not save_success:
+
+                raise RuntimeError(
+                    "Không thể lưu ảnh webcam."
+                )
+
+
+        # ======================================
+        # LƯU ANALYSIS SESSION
+        # ======================================
 
         session_id = (
             save_analysis_session(
+
                 source_type=
                     "webcam",
 
@@ -1222,7 +1293,11 @@ def stop_webcam():
                     statistics_result,
 
                 output_path=
-                    None,
+                    (
+                        str(output_path)
+                        if output_path
+                        else None
+                    ),
 
                 fps=
                     webcam_state[
@@ -1232,13 +1307,107 @@ def stop_webcam():
         )
 
 
+        # ======================================
+        # LƯU SEAT RESULTS
+        # ======================================
+
         save_seat_results(
-    session_id,
-    webcam_state[
-        "last_occupancy"
-    ],
-    None
-)
+            session_id,
+
+            webcam_state[
+                "last_occupancy"
+            ],
+
+            None
+        )
+
+
+        # ======================================
+        # UPDATE STATE
+        # ======================================
+
+        webcam_state[
+            "saved"
+        ] = True
+
+
+        webcam_state[
+            "session_id"
+        ] = session_id
+
+
+        webcam_state[
+            "stream_active"
+        ] = False
+
+
+        # ======================================
+        # RESPONSE
+        # ======================================
+
+        return jsonify({
+
+            "success":
+                True,
+
+            "status":
+                "stopped",
+
+            "saved":
+                True,
+
+            "session_id":
+                session_id,
+
+            "output_url":
+                (
+                    (
+                        "/results/screenshots/"
+                        + output_filename
+                    )
+
+                    if output_filename
+
+                    else None
+                ),
+
+            "message":
+                (
+                    "Webcam stopped and "
+                    "analysis was saved "
+                    "to History."
+                )
+        })
+
+
+    except Exception as error:
+
+        print(
+            "SAVE WEBCAM ERROR:",
+            error
+        )
+
+
+        webcam_state[
+            "stream_active"
+        ] = False
+
+
+        return jsonify({
+
+            "success":
+                False,
+
+            "status":
+                "error",
+
+            "saved":
+                False,
+
+            "message":
+                str(error)
+
+        }), 500
 
 
         webcam_state[
@@ -1617,6 +1786,9 @@ def generate_webcam_frames():
                     fps
                 )
             )
+            webcam_state[
+    "last_frame"
+] = output_frame.copy()
 
 
             # =============================================
@@ -1754,8 +1926,57 @@ def result_video(
 )
 def history():
 
+    history_data = get_history()
+
+    for item in history_data:
+
+        output_path = item.get(
+            "output_path"
+        )
+
+        item["media_url"] = None
+
+
+        if not output_path:
+            continue
+
+
+        path = Path(
+            output_path
+        )
+
+
+        # IMAGE / WEBCAM
+        if item.get(
+            "source_type"
+        ) in [
+            "image",
+            "webcam"
+        ]:
+
+            item[
+                "media_url"
+            ] = (
+                "/results/screenshots/"
+                + path.name
+            )
+
+
+        # VIDEO
+        elif item.get(
+            "source_type"
+        ) == "video":
+
+            item[
+                "media_url"
+            ] = (
+                "/results/videos/"
+                + path.name
+            )
+
+
     return jsonify(
-        get_history()
+        history_data
     )
 
 

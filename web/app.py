@@ -242,6 +242,10 @@ def statistics():
 
 def analyze_image():
 
+    # ==========================================
+    # 1. KIỂM TRA FILE
+    # ==========================================
+
     if "image" not in request.files:
 
         return jsonify({
@@ -265,9 +269,19 @@ def analyze_image():
         }), 400
 
 
+    # ==========================================
+    # 2. LƯU ẢNH UPLOAD
+    # ==========================================
+
+    input_filename = (
+        f"{uuid.uuid4().hex}_"
+        f"{image_file.filename}"
+    )
+
+
     input_path = (
         UPLOAD_IMAGE_DIR
-        / image_file.filename
+        / input_filename
     )
 
 
@@ -278,33 +292,49 @@ def analyze_image():
 
     try:
 
+        # ======================================
+        # 3. ĐỌC ẢNH
+        # ======================================
+
         image = read_image(
             str(input_path)
         )
 
 
-        seats = load_seats(
-            str(
-                SEAT_IMAGE_CONFIG
-            )
-        )
-
+        # ======================================
+        # 4. DYNAMIC PERSON + CHAIR DETECTION
+        # ======================================
 
         (
             output_image,
-            detections,
-            mappings,
+            persons,
+            chairs,
             occupancy_results,
             statistics_result
-        ) = process_frame(
+        ) = process_dynamic_webcam_frame(
             model,
             image,
-            seats
+            fps=None
         )
 
 
+        # ======================================
+        # 5. VẼ STATISTICS
+        # ======================================
+
+        output_image = draw_statistics(
+            output_image,
+            statistics_result,
+            fps=None
+        )
+
+
+        # ======================================
+        # 6. LƯU ẢNH KẾT QUẢ
+        # ======================================
+
         output_filename = (
-            f"session_{uuid.uuid4().hex}.jpg"
+            f"image_{uuid.uuid4().hex}.jpg"
         )
 
 
@@ -327,6 +357,10 @@ def analyze_image():
             )
 
 
+        # ======================================
+        # 7. LƯU DATABASE
+        # ======================================
+
         session_id = (
             save_analysis_session(
                 source_type="image",
@@ -335,7 +369,7 @@ def analyze_image():
                     image_file.filename,
 
                 persons=
-                    len(detections),
+                    len(persons),
 
                 statistics=
                     statistics_result,
@@ -348,21 +382,31 @@ def analyze_image():
         )
 
 
+        # Dynamic detection không có
+        # mappings kiểu ROI cố định
         save_seat_results(
             session_id,
             occupancy_results,
-            mappings
+            None
         )
 
 
+        # ======================================
+        # 8. TRẢ KẾT QUẢ CHO VUE
+        # ======================================
+
         return jsonify({
-            "success": True,
+            "success":
+                True,
 
             "session_id":
                 session_id,
 
             "persons":
-                len(detections),
+                len(persons),
+
+            "chairs":
+                len(chairs),
 
             "total_seats":
                 statistics_result[
@@ -402,8 +446,11 @@ def analyze_image():
             error
         )
 
+
         return jsonify({
-            "success": False,
+            "success":
+                False,
+
             "message":
                 str(error)
         }), 500
@@ -1485,6 +1532,13 @@ def generate_webcam_frames():
                     "error"
                 ] = message
 
+                webcam_state[
+        "running"
+    ] = False
+                webcam_state[
+        "stream_active"
+    ] = False
+
                 break
 
 
@@ -1605,6 +1659,14 @@ def generate_webcam_frames():
         ] = str(
             error
         )
+
+        webcam_state[
+        "running"
+    ] = False
+
+        webcam_state[
+        "stream_active"
+    ] = False
 
 
     finally:

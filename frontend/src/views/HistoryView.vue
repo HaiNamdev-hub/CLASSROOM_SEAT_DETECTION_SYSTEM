@@ -15,6 +15,12 @@ const loading = ref(false);
 const errorMessage = ref("");
 
 
+// Dữ liệu đang được xem
+const selectedItem = ref(null);
+
+const showMediaModal = ref(false);
+
+
 const loadHistory = async () => {
 
   loading.value = true;
@@ -45,6 +51,24 @@ const loadHistory = async () => {
     loading.value = false;
 
   }
+
+};
+
+
+const viewMedia = (item) => {
+
+  selectedItem.value = item;
+
+  showMediaModal.value = true;
+
+};
+
+
+const closeMedia = () => {
+
+  showMediaModal.value = false;
+
+  selectedItem.value = null;
 
 };
 
@@ -109,41 +133,26 @@ onMounted(
 
           <tr>
 
-            <th>
-              ID
-            </th>
+            <th>ID</th>
 
-            <th>
-              Time
-            </th>
+            <th>Time</th>
 
-            <th>
-              Source
-            </th>
+            <th>Source</th>
 
-            <th>
-              File
-            </th>
+            <th>File</th>
 
-            <th>
-              Persons
-            </th>
+            <th>Persons</th>
 
-            <th>
-              Total
-            </th>
+            <th>Total</th>
 
-            <th>
-              Occupied
-            </th>
+            <th>Occupied</th>
 
-            <th>
-              Empty
-            </th>
+            <th>Empty</th>
 
-            <th>
-              Rate
-            </th>
+            <th>Rate</th>
+
+            <!-- Thêm cột này -->
+            <th>View</th>
 
           </tr>
 
@@ -190,9 +199,20 @@ onMounted(
             </td>
 
             <td>
-              {{
-                item.occupancy_rate
-              }}%
+              {{ item.occupancy_rate }}%
+            </td>
+
+
+            <!-- Nút xem ảnh/video -->
+            <td>
+
+              <button
+                class="view-btn"
+                @click="viewMedia(item)"
+              >
+                View
+              </button>
+
             </td>
 
           </tr>
@@ -203,9 +223,111 @@ onMounted(
 
     </div>
 
+
+    <!-- Modal xem ảnh/video -->
+    <div
+      v-if="showMediaModal && selectedItem"
+      class="modal-overlay"
+      @click.self="closeMedia"
+    >
+
+      <div class="media-modal">
+
+        <div class="modal-header">
+
+          <div>
+
+            <h2>
+              Analysis Media
+            </h2>
+
+            <p>
+              {{ selectedItem.created_at }}
+            </p>
+
+          </div>
+
+
+          <button
+            class="close-btn"
+            @click="closeMedia"
+          >
+            ×
+          </button>
+
+        </div>
+
+
+        <div class="media-container">
+
+          <!-- Nếu là ảnh -->
+          <img
+            v-if="
+              selectedItem.source_type === 'image'
+            "
+            :src="selectedItem.media_url"
+            class="history-image"
+            alt="Classroom analysis"
+          >
+
+
+          <!-- Nếu là video -->
+          <video
+            v-else-if="
+              selectedItem.source_type === 'video'
+            "
+            :src="selectedItem.media_url"
+            class="history-video"
+            controls
+          >
+          </video>
+
+
+          <p v-else>
+            Không hỗ trợ loại file này.
+          </p>
+
+        </div>
+
+
+        <div class="media-info">
+
+          <p>
+            <strong>File:</strong>
+            {{ selectedItem.source_name }}
+          </p>
+
+          <p>
+            <strong>Persons:</strong>
+            {{ selectedItem.persons }}
+          </p>
+
+          <p>
+            <strong>Occupied:</strong>
+            {{ selectedItem.occupied_seats }}
+          </p>
+
+          <p>
+            <strong>Empty:</strong>
+            {{ selectedItem.empty_seats }}
+          </p>
+
+          <p>
+            <strong>Occupancy Rate:</strong>
+            {{ selectedItem.occupancy_rate }}%
+          </p>
+
+        </div>
+
+      </div>
+
+    </div>
+
   </section>
 
 </template>
+
+
 <style>
 .history-table {
   width: 100%;
@@ -222,5 +344,153 @@ onMounted(
 
 .history-table th {
   background: #f9fafb;
+}
+
+
+/* Nút View */
+
+.view-btn {
+  padding: 7px 14px;
+  border: none;
+  border-radius: 6px;
+  background: #2563eb;
+  color: white;
+  cursor: pointer;
+}
+
+.view-btn:hover {
+  background: #1d4ed8;
+}
+
+
+/* Modal */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+
+  background: rgba(
+    0,
+    0,
+    0,
+    0.6
+  );
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 20px;
+
+  z-index: 1000;
+}
+
+
+.media-modal {
+  background: white;
+
+  width: 90%;
+  max-width: 900px;
+
+  max-height: 90vh;
+
+  overflow-y: auto;
+
+  border-radius: 12px;
+
+  padding: 24px;
+
+  box-shadow:
+    0 20px 50px
+    rgba(0, 0, 0, 0.25);
+}
+
+
+.modal-header {
+  display: flex;
+
+  justify-content: space-between;
+
+  align-items: flex-start;
+
+  margin-bottom: 20px;
+}
+
+
+.modal-header h2 {
+  margin: 0;
+}
+
+
+.modal-header p {
+  margin-top: 5px;
+
+  color: #6b7280;
+}
+
+
+.close-btn {
+  border: none;
+
+  background: none;
+
+  font-size: 30px;
+
+  cursor: pointer;
+
+  color: #6b7280;
+}
+
+
+.media-container {
+  width: 100%;
+
+  display: flex;
+
+  justify-content: center;
+
+  background: #111827;
+
+  border-radius: 10px;
+
+  overflow: hidden;
+}
+
+
+.history-image,
+.history-video {
+  display: block;
+
+  max-width: 100%;
+
+  max-height: 550px;
+
+  object-fit: contain;
+}
+
+
+.media-info {
+  margin-top: 20px;
+
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      auto-fit,
+      minmax(180px, 1fr)
+    );
+
+  gap: 10px;
+}
+
+
+.media-info p {
+  margin: 0;
+
+  padding: 10px;
+
+  background: #f9fafb;
+
+  border-radius: 6px;
 }
 </style>

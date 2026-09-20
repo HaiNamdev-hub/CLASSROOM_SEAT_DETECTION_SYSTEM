@@ -658,17 +658,16 @@ def process_video_job(
 
 
             (
-                output_frame,
-                detections,
-                mappings,
-                occupancy_results,
-                statistics_result
-            ) = process_frame(
-                model,
-                frame,
-                seats,
-                draw_stats=False
-            )
+    output_frame,
+    persons,
+    chairs,
+    occupancy_results,
+    statistics_result
+) = process_dynamic_webcam_frame(
+    model,
+    frame,
+    fps=None
+)
 
 
             processing_time = (
@@ -707,7 +706,7 @@ def process_video_job(
 
 
             last_persons_count = (
-                len(detections)
+                len(persons)
             )
 
 
@@ -721,9 +720,7 @@ def process_video_job(
             )
 
 
-            last_mappings = (
-                mappings
-            )
+            last_mappings = None
 
 
             if total_frames > 0:

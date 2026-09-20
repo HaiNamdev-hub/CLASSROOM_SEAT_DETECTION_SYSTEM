@@ -1,14 +1,11 @@
 from src.person_detector import (
-    detect_persons_and_chairs,
-    extract_person_and_chair_detections
+    detect_classroom_objects,
+    extract_classroom_detections,
+    draw_person_detections
 )
 
 from src.dynamic_occupancy import (
     determine_dynamic_occupancy
-)
-
-from src.person_detector import (
-    draw_person_detections
 )
 
 from src.visualizer import (
@@ -24,19 +21,20 @@ def process_dynamic_webcam_frame(
 ):
 
     # =========================================
-    # 1. YOLO: PERSON + CHAIR
+    # 1. YOLO:
+    # PERSON + CHAIR + OBJECT
     # =========================================
 
     results = (
-        detect_persons_and_chairs(
+        detect_classroom_objects(
             model,
             frame
         )
     )
 
 
-    persons, chairs = (
-        extract_person_and_chair_detections(
+    persons, chairs, objects = (
+        extract_classroom_detections(
             results
         )
     )
@@ -50,17 +48,29 @@ def process_dynamic_webcam_frame(
         determine_dynamic_occupancy(
             persons,
             chairs,
-            frame.shape
+            frame.shape,
+            objects
         )
     )
 
 
+    # =========================================
+    # 3. COUNT STATUS
+    # =========================================
+
     occupied_count = sum(
         1
-        for seat
-        in occupancy_results
+        for seat in occupancy_results
         if seat["status"]
         == "Occupied"
+    )
+
+
+    blocked_count = sum(
+        1
+        for seat in occupancy_results
+        if seat["status"]
+        == "Blocked"
     )
 
 
@@ -69,9 +79,11 @@ def process_dynamic_webcam_frame(
     )
 
 
-    empty_count = (
-        total_seats
-        - occupied_count
+    empty_count = sum(
+        1
+        for seat in occupancy_results
+        if seat["status"]
+        == "Empty"
     )
 
 
@@ -79,17 +91,23 @@ def process_dynamic_webcam_frame(
         occupied_count
         / total_seats
         * 100
+
         if total_seats > 0
+
         else 0.0
     )
 
 
     statistics = {
+
         "total_seats":
             total_seats,
 
         "occupied_seats":
             occupied_count,
+
+        "blocked_seats":
+            blocked_count,
 
         "empty_seats":
             empty_count,
@@ -100,7 +118,7 @@ def process_dynamic_webcam_frame(
 
 
     # =========================================
-    # 3. DRAW PERSON
+    # 4. DRAW PERSON
     # =========================================
 
     output = (
@@ -112,7 +130,7 @@ def process_dynamic_webcam_frame(
 
 
     # =========================================
-    # 4. DRAW CHAIR STATUS
+    # 5. DRAW CHAIR STATUS
     # =========================================
 
     output = (
@@ -124,7 +142,7 @@ def process_dynamic_webcam_frame(
 
 
     # =========================================
-    # 5. DRAW STATISTICS
+    # 6. DRAW STATISTICS
     # =========================================
 
     output = (
@@ -135,6 +153,10 @@ def process_dynamic_webcam_frame(
         )
     )
 
+
+    # =========================================
+    # 7. RETURN
+    # =========================================
 
     return (
         output,

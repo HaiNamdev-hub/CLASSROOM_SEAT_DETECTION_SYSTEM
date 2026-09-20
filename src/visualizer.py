@@ -102,38 +102,48 @@ def draw_dynamic_seat_status(
 ):
     output = image.copy()
 
-
     for seat in occupancy_results:
 
-        x1, y1, x2, y2 = (
-            seat["roi"]
-        )
+        x1, y1, x2, y2 = seat["roi"]
 
-        status = (
-            seat["status"]
-        )
+        status = seat["status"]
+        seat_id = seat["seat_id"]
 
-        seat_id = (
-            seat["seat_id"]
-        )
-
+        # =====================================
+        # COLOR BY STATUS
+        # =====================================
 
         if status == "Occupied":
 
+            # Đỏ
             color = (
                 0,
                 0,
                 255
             )
 
+        elif status == "Blocked":
+
+            # Cam
+            color = (
+                0,
+                165,
+                255
+            )
+
         else:
 
+            # Xanh
             color = (
                 0,
                 255,
                 0
             )
 
+
+        # =====================================
+        # DRAW CHAIR BOX
+        # =====================================
 
         cv2.rectangle(
             output,
@@ -144,10 +154,44 @@ def draw_dynamic_seat_status(
         )
 
 
+        # =====================================
+        # LABEL
+        # =====================================
+
         label = (
             f"{seat_id}: {status}"
         )
 
+
+        # Nếu ghế bị vật cản
+        if status == "Blocked":
+
+            obj = seat.get(
+                "object"
+            )
+
+            if obj is not None:
+
+                object_name = obj.get(
+                    "class",
+                    "object"
+                )
+
+                confidence = obj.get(
+                    "confidence",
+                    0.0
+                )
+
+                label = (
+                    f"{seat_id}: Blocked - "
+                    f"{object_name} "
+                    f"{confidence:.2f}"
+                )
+
+
+        # =====================================
+        # DRAW LABEL
+        # =====================================
 
         cv2.putText(
             output,
@@ -160,7 +204,7 @@ def draw_dynamic_seat_status(
                 )
             ),
             cv2.FONT_HERSHEY_SIMPLEX,
-            0.6,
+            0.55,
             color,
             2
         )

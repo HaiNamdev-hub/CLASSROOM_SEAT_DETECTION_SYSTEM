@@ -11,6 +11,16 @@ PERSON_CLASS_ID = 0
 CHAIR_CLASS_ID = 56
 
 
+BLOCKING_OBJECT_CLASS_IDS = {
+    24: "backpack",
+    26: "handbag",
+    28: "suitcase",
+    39: "bottle",
+    63: "laptop",
+    67: "cell phone",
+    73: "book",
+}
+
 def load_model(model_name=DEFAULT_MODEL):
     try:
         print(f"Đang load model: {model_name}")
@@ -58,6 +68,106 @@ def detect_persons_and_chairs(
     )
 
     return results
+
+def detect_classroom_objects(
+    model,
+    image
+):
+    """
+    Detect:
+    - Person
+    - Chair
+    - Các object có thể chiếm ghế
+    """
+
+    class_ids = [
+        PERSON_CLASS_ID,
+        CHAIR_CLASS_ID,
+        *BLOCKING_OBJECT_CLASS_IDS.keys()
+    ]
+
+    results = model(
+        image,
+        classes=class_ids
+    )
+
+    return results
+
+
+def extract_classroom_detections(
+    results
+):
+    persons = []
+    chairs = []
+    objects = []
+
+    for result in results:
+
+        for box in result.boxes:
+
+            class_id = int(
+                box.cls[0]
+            )
+
+            x1, y1, x2, y2 = (
+                box.xyxy[0].tolist()
+            )
+
+            confidence = float(
+                box.conf[0]
+            )
+
+            detection = {
+                "bbox": [
+                    int(x1),
+                    int(y1),
+                    int(x2),
+                    int(y2)
+                ],
+
+                "confidence":
+                    confidence,
+
+                "class_id":
+                    class_id
+            }
+
+            # PERSON
+            if class_id == PERSON_CLASS_ID:
+
+                detection["class"] = "person"
+
+                persons.append(
+                    detection
+                )
+
+            # CHAIR
+            elif class_id == CHAIR_CLASS_ID:
+
+                detection["class"] = "chair"
+
+                chairs.append(
+                    detection
+                )
+
+            # OBJECT
+            elif class_id in BLOCKING_OBJECT_CLASS_IDS:
+
+                detection["class"] = (
+                    BLOCKING_OBJECT_CLASS_IDS[
+                        class_id
+                    ]
+                )
+
+                objects.append(
+                    detection
+                )
+
+    return (
+        persons,
+        chairs,
+        objects
+    )
 
 
 def extract_person_and_chair_detections(

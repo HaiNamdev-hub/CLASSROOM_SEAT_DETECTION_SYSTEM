@@ -73,13 +73,6 @@ def detect_classroom_objects(
     model,
     image
 ):
-    """
-    Detect:
-    - Person
-    - Chair
-    - Các object có thể chiếm ghế
-    """
-
     class_ids = [
         PERSON_CLASS_ID,
         CHAIR_CLASS_ID,
@@ -88,7 +81,9 @@ def detect_classroom_objects(
 
     results = model(
         image,
-        classes=class_ids
+        classes=class_ids,
+        conf=0.15,
+        iou=0.45
     )
 
     return results
